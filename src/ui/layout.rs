@@ -40,7 +40,7 @@ pub fn draw(f: &mut Frame, app: &App) {
         .split(chunks[1]);
 
     render_search_input(f, app, left_chunks[0], dimmed, style);
-    render_search_results(f, app, left_chunks[1], dimmed);
+    render_search_results(f, app, left_chunks[1], dimmed, style);
     render_history(f, right_chunks[0], dimmed);
     render_config_menu(f, right_chunks[1], dimmed);
 

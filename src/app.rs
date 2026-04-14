@@ -3,6 +3,17 @@ use crate::db::history::History;
 use crate::ui::modals::create_connection::CreateConnectionModal;
 use crate::ui::modals::delete_connection::DeleteConnectionModal;
 use diesel::SqliteConnection;
+use fuzzy_matcher::FuzzyMatcher;
+use fuzzy_matcher::skim::SkimMatcherV2;
+
+#[derive(Clone, Default)]
+pub struct FuzzyMatchResult {
+    pub conn_index: usize,
+    pub score: i64,
+    pub name_indices: Vec<usize>,
+    pub username_indices: Vec<usize>,
+    pub hostname_indices: Vec<usize>,
+}
 
 #[derive(PartialEq)]
 pub enum AppFocus {
@@ -18,6 +29,7 @@ pub struct App {
     pub keys_modal: crate::ui::modals::keys::KeysModal,
     pub db: SqliteConnection,
     pub connections: Vec<Connection>,
+    pub filtered_connections: Vec<FuzzyMatchResult>,
     pub pending_ssh_connection: Option<Connection>,
     pub selected_connection_index: usize,
     pub show_help_modal: bool,
@@ -29,7 +41,7 @@ impl App {
     pub fn new(mut db: SqliteConnection) -> Self {
         let connections = Connection::get_all(&mut db).unwrap_or_default();
         let recent_history = History::get_recent(&mut db, 10).unwrap_or_default();
-        Self {
+        let mut app = Self {
             input: String::new(),
             messages: Vec::new(),
             create_connection_modal: CreateConnectionModal::default(),
@@ -37,12 +49,15 @@ impl App {
             keys_modal: crate::ui::modals::keys::KeysModal::default(),
             db,
             connections,
+            filtered_connections: Vec::new(),
             pending_ssh_connection: None,
             selected_connection_index: 0,
             show_help_modal: false,
             recent_history,
             focus: AppFocus::Search,
-        }
+        };
+        app.update_search_filter();
+        app
     }
 
     pub fn db_conn(&mut self) -> &mut SqliteConnection {
@@ -58,6 +73,69 @@ impl App {
     pub fn refresh_connections(&mut self) {
         if let Ok(conns) = Connection::get_all(&mut self.db) {
             self.connections = conns;
+            self.update_search_filter();
+        }
+    }
+
+    pub fn update_search_filter(&mut self) {
+        let matcher = SkimMatcherV2::default();
+        let query = &self.input;
+        
+        let mut results = Vec::new();
+        
+        if query.is_empty() {
+            for (index, _) in self.connections.iter().enumerate() {
+                results.push(FuzzyMatchResult {
+                    conn_index: index,
+                    score: Default::default(),
+                    name_indices: Vec::new(),
+                    username_indices: Vec::new(),
+                    hostname_indices: Vec::new(),
+                });
+            }
+        } else {
+            for (index, conn) in self.connections.iter().enumerate() {
+                let combined = format!("{} {} {}", conn.name, conn.username, conn.hostname);
+                if let Some((score, indices)) = matcher.fuzzy_indices(&combined, query) {
+                    let name_len = conn.name.chars().count();
+                    let user_len = conn.username.chars().count();
+                    
+                    let name_start = 0;
+                    let name_end = name_len;
+                    let user_start = name_end + 1;
+                    let user_end = user_start + user_len;
+                    let host_start = user_end + 1;
+                    
+                    let mut name_idx = Vec::new();
+                    let mut user_idx = Vec::new();
+                    let mut host_idx = Vec::new();
+                    
+                    for idx in indices {
+                        if idx < name_end {
+                            name_idx.push(idx);
+                        } else if idx >= user_start && idx < user_end {
+                            user_idx.push(idx - user_start);
+                        } else if idx >= host_start {
+                            host_idx.push(idx - host_start);
+                        }
+                    }
+                    results.push(FuzzyMatchResult {
+                        conn_index: index,
+                        score,
+                        name_indices: name_idx,
+                        username_indices: user_idx,
+                        hostname_indices: host_idx,
+                    });
+                }
+            }
+            results.sort_by(|a, b| b.score.cmp(&a.score));
+        }
+        
+        self.filtered_connections = results;
+        if self.selected_connection_index >= self.filtered_connections.len() && !self.filtered_connections.is_empty() {
+            self.selected_connection_index = self.filtered_connections.len() - 1;
+        } else if self.filtered_connections.is_empty() {
+            self.selected_connection_index = 0;
         }
     }
 

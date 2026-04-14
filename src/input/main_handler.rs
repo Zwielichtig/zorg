@@ -16,21 +16,24 @@ pub fn handle_main_input(app: &mut App, key: KeyEvent) -> bool {
             if app.focus == AppFocus::Search {
                 app.focus = AppFocus::List;
             } else {
-                if app.selected_connection_index < app.connections.len() {
-                    app.pending_ssh_connection = Some(app.connections[app.selected_connection_index].clone());
+                if app.selected_connection_index < app.filtered_connections.len() {
+                    let conn_idx = app.filtered_connections[app.selected_connection_index].conn_index;
+                    app.pending_ssh_connection = Some(app.connections[conn_idx].clone());
                 }
             }
         }
         KeyCode::Up => {
-            app.focus = AppFocus::List;
-            if app.selected_connection_index > 0 {
-                app.selected_connection_index -= 1;
+            if app.focus == AppFocus::List {
+                if app.selected_connection_index > 0 {
+                    app.selected_connection_index -= 1;
+                }
             }
         }
         KeyCode::Down => {
-            app.focus = AppFocus::List;
-            if app.selected_connection_index + 1 < app.connections.len() {
-                app.selected_connection_index += 1;
+            if app.focus == AppFocus::List {
+                if app.selected_connection_index + 1 < app.filtered_connections.len() {
+                    app.selected_connection_index += 1;
+                }
             }
         }
         KeyCode::Char(key_pressed) => {
@@ -39,15 +42,17 @@ pub fn handle_main_input(app: &mut App, key: KeyEvent) -> bool {
             } else if key.modifiers.contains(KeyModifiers::CONTROL) && key_pressed == 'n' {
                 app.create_connection_modal.is_open = true;
             } else if key.modifiers.contains(KeyModifiers::CONTROL) && key_pressed == 'd' {
-                if app.focus == AppFocus::List && app.selected_connection_index < app.connections.len() {
-                    let conn = &app.connections[app.selected_connection_index];
+                if app.focus == AppFocus::List && app.selected_connection_index < app.filtered_connections.len() {
+                    let conn_idx = app.filtered_connections[app.selected_connection_index].conn_index;
+                    let conn = &app.connections[conn_idx];
                     if let Some(id) = conn.id {
                         app.delete_connection_modal.open(id, conn.name.clone());
                     }
                 }
             } else if key.modifiers.contains(KeyModifiers::CONTROL) && key_pressed == 'e' {
-                if app.focus == AppFocus::List && app.selected_connection_index < app.connections.len() {
-                    let conn = app.connections[app.selected_connection_index].clone();
+                if app.focus == AppFocus::List && app.selected_connection_index < app.filtered_connections.len() {
+                    let conn_idx = app.filtered_connections[app.selected_connection_index].conn_index;
+                    let conn = app.connections[conn_idx].clone();
                     app.create_connection_modal.load_connection(&conn);
                 }
 
@@ -56,11 +61,13 @@ pub fn handle_main_input(app: &mut App, key: KeyEvent) -> bool {
             //     app.keys_modal.open();
             } else if app.focus == AppFocus::List {
                 if key_pressed == 'f' {
-                    if app.selected_connection_index < app.connections.len() {
-                        if let Some(id) = app.connections[app.selected_connection_index].id {
+                    if app.selected_connection_index < app.filtered_connections.len() {
+                        let conn_idx = app.filtered_connections[app.selected_connection_index].conn_index;
+                        if let Some(id) = app.connections[conn_idx].id {
                             let mut db_conn = app.db_conn();
                             if let Ok(updated) = crate::db::connection::Connection::toggle_favorite(&mut db_conn, id) {
-                                app.connections[app.selected_connection_index] = updated;
+                                app.connections[conn_idx] = updated;
+                                app.update_search_filter();
                             }
                         }
                     }
@@ -69,14 +76,17 @@ pub fn handle_main_input(app: &mut App, key: KeyEvent) -> bool {
                 } else {
                     app.focus = AppFocus::Search;
                     app.input.push(key_pressed);
+                    app.update_search_filter();
                 }
             } else {
                 app.input.push(key_pressed);
+                app.update_search_filter();
             }
         }
         KeyCode::Backspace => {
             if app.focus == AppFocus::Search {
                 app.input.pop();
+                app.update_search_filter();
             }
         }
         KeyCode::Esc => {
