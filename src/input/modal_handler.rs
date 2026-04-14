@@ -5,6 +5,19 @@ pub fn handle_modal_input(app: &mut App, key: KeyEvent) -> bool {
     if key.modifiers.contains(KeyModifiers::CONTROL) && matches!(key.code, KeyCode::Char('c')) {
         return true; // Request exit
     }
+
+    if app.keys_modal.is_open {
+        match key.code {
+            KeyCode::Esc => app.keys_modal.close(),
+            KeyCode::Up => app.keys_modal.previous(),
+            KeyCode::Down => app.keys_modal.next(),
+            KeyCode::Enter => app.keys_modal.add_selected_to_agent(),
+            KeyCode::Char('a') => app.keys_modal.start_ssh_agent(),
+            _ => {}
+        }
+        return false;
+    }
+
     match key.code {
         KeyCode::Esc => {
             app.close_modal();

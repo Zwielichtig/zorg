@@ -44,7 +44,7 @@ pub fn draw(f: &mut Frame, app: &App) {
     render_history(f, app, right_chunks[0], dimmed, style);
     render_config_menu(f, right_chunks[1], dimmed);
 
-    let shortcuts = " [Enter] Connect  |  [f] Toggle Favorite  |  [Ctrl+n] New  |  [Ctrl+e] Edit  |  [Up/Down] Navigate  |  [?] Full Help";
+    let shortcuts = " [Enter] Connect  |  [f] Toggle Favorite  |  [Ctrl+n] New  |  [Ctrl+e] Edit  |  [Ctrl+k] Keys  |  [Up/Down] Navigate  |  [?] Full Help";
     f.render_widget(
         Paragraph::new(shortcuts).style(Style::default().fg(Color::Yellow)),
         main_chunks[1],
@@ -58,6 +58,7 @@ pub fn draw(f: &mut Frame, app: &App) {
             [f]       Toggle favorite status\n\
             [Ctrl+n]  Create new connection\n\
             [Ctrl+e]  Edit selected connection\n\
+            [Ctrl+k]  Manage SSH Keys\n\
             [Up/Down] Navigate list\n\
             [?]       Toggle this help modal\n\
             [Ctrl+c]  Quit application\n\

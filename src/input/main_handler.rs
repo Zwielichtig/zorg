@@ -43,6 +43,8 @@ pub fn handle_main_input(app: &mut App, key: KeyEvent) -> bool {
                     let conn = app.connections[app.selected_connection_index].clone();
                     app.create_connection_modal.load_connection(&conn);
                 }
+            } else if key.modifiers.contains(KeyModifiers::CONTROL) && key_pressed == 'k' {
+                app.keys_modal.open();
             } else if app.focus == AppFocus::List {
                 if key_pressed == 'f' {
                     if app.selected_connection_index < app.connections.len() {

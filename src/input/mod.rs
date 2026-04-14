@@ -9,6 +9,8 @@ use modal_handler::handle_modal_input;
 pub fn handle_key_event(app: &mut App, key: KeyEvent) -> bool {
     if app.create_connection_modal.is_open {
         handle_modal_input(app, key)
+    } else if app.keys_modal.is_open {
+        handle_modal_input(app, key)
     } else {
         handle_main_input(app, key)
     }

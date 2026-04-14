@@ -11,9 +11,9 @@ pub enum AppFocus {
 
 pub struct App {
     pub input: String,
-    pub cursor_position: usize,
     pub messages: Vec<String>,
     pub create_connection_modal: CreateConnectionModal,
+    pub keys_modal: crate::ui::modals::keys::KeysModal,
     pub db: SqliteConnection,
     pub connections: Vec<Connection>,
     pub pending_ssh_connection: Option<Connection>,
@@ -29,9 +29,9 @@ impl App {
         let recent_history = History::get_recent(&mut db, 10).unwrap_or_default();
         Self {
             input: String::new(),
-            cursor_position: 0,
             messages: Vec::new(),
             create_connection_modal: CreateConnectionModal::default(),
+            keys_modal: crate::ui::modals::keys::KeysModal::default(),
             db,
             connections,
             pending_ssh_connection: None,
@@ -56,12 +56,6 @@ impl App {
         if let Ok(conns) = Connection::get_all(&mut self.db) {
             self.connections = conns;
         }
-    }
-
-    pub fn submit_message(&mut self) {
-        self.messages.push(self.input.clone());
-        self.input.clear();
-        self.cursor_position = 0;
     }
 
     pub fn submit_connection(&mut self) {

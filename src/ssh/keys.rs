@@ -1,8 +1,6 @@
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
-use std::process::Command;
-
 pub struct SshKeyInfo {
     pub path: PathBuf,
     pub is_private: bool,
@@ -26,7 +24,7 @@ pub fn get_available_keys() -> Vec<SshKeyInfo> {
             let path = entry.path();
             if path.is_file() {
                 let file_name = path.file_name().unwrap_or_default().to_string_lossy();
-                if file_name == "config" || file_name == "known_hosts" || file_name.ends_with(".known_hosts") {
+                if file_name == "config" || file_name == "known_hosts" || file_name.ends_with(".known_hosts") || file_name.ends_with(".pub") {
                     continue;
                 }
                 
@@ -53,16 +51,3 @@ pub fn get_available_keys() -> Vec<SshKeyInfo> {
     keys
 }
 
-pub fn generate_key(name: &str, key_type: &str, comment: &str) -> std::io::Result<bool> {
-    let home = std::env::var("HOME").unwrap_or_else(|_| "".to_string());
-    let path = format!("{}/.ssh/{}", home, name);
-    
-    let status = Command::new("ssh-keygen")
-        .arg("-t").arg(key_type)
-        .arg("-N").arg("")
-        .arg("-C").arg(comment)
-        .arg("-f").arg(path)
-        .status()?;
-        
-    Ok(status.success())
-}
