@@ -44,7 +44,7 @@ pub fn draw(f: &mut Frame, app: &App) {
     render_history(f, right_chunks[0], dimmed);
     render_config_menu(f, right_chunks[1], dimmed);
 
-    let shortcuts = " [Enter] Connect  |  [f] Toggle Favorite  |  [Ctrl+n] New  |  [Ctrl+e] Edit  |  [Ctrl+d] Delete  |  [Ctrl+k] Keys  |  [Up/Down] Navigate  |  [?] Full Help";
+    let shortcuts = " [Enter] Connect  |  [f] Toggle Favorite  |  [Ctrl+n] New  |  [Ctrl+e] Edit  |  [Ctrl+d] Delete   |  [Up/Down] Navigate  |  [?] Full Help";
     f.render_widget(
         Paragraph::new(shortcuts).style(Style::default().fg(Color::Yellow)),
         main_chunks[1],
@@ -60,11 +60,11 @@ pub fn draw(f: &mut Frame, app: &App) {
             [Ctrl+n]  Create new connection\n\
             [Ctrl+e]  Edit selected connection\n\
             [Ctrl+d]  Delete selected connection\n\
-            [Ctrl+k]  Manage SSH Keys\n\
+            [Tab]     Navigate blocks\n\
             [Up/Down] Navigate list\n\
             [?]       Toggle this help modal\n\
             [Ctrl+c]  Quit application\n\
-            [Esc]     Go back / Close modal";
+            [Esc]     Close modal / Quit application";
         let help_block = crate::ui::utils::default_block_builder("Help (Press Esc to close)", false);
         f.render_widget(Paragraph::new(help_text).block(help_block), help_area);
     }
