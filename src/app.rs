@@ -29,7 +29,8 @@ pub struct App {
     pub delete_connection_modal: DeleteConnectionModal,
     pub keys_modal: crate::ui::modals::keys::KeysModal,
     pub proxy_jumps_modal: ProxyJumpsModal,
-    pub proxy_jump_targets: std::collections::HashSet<i32>,
+    pub proxy_hosts: std::collections::HashSet<i32>,        // target_connection_id
+    pub proxy_destinations: std::collections::HashSet<i32>, // source_connection_id
     pub db: SqliteConnection,
     pub connections: Vec<Connection>,
     pub filtered_connections: Vec<FuzzyMatchResult>,
@@ -50,7 +51,8 @@ impl App {
             delete_connection_modal: DeleteConnectionModal::default(),
             keys_modal: crate::ui::modals::keys::KeysModal::default(),
             proxy_jumps_modal: ProxyJumpsModal::default(),
-            proxy_jump_targets: std::collections::HashSet::new(),
+            proxy_hosts: std::collections::HashSet::new(),
+            proxy_destinations: std::collections::HashSet::new(),
             db,
             connections: Vec::new(),
             filtered_connections: Vec::new(),
@@ -77,10 +79,22 @@ impl App {
     pub fn refresh_connections(&mut self) {
         if let Ok(conns) = Connection::get_all(&mut self.db) {
             self.connections = conns;
-            if let Ok(targets) = crate::db::hop::ConnectionHop::get_all_jump_target_ids(&mut self.db) {
-                self.proxy_jump_targets = targets;
+            // proxy hosts (used as jump targets)
+            if let Ok(hosts) =
+                crate::db::hop::ConnectionHop::get_all_jump_target_ids(&mut self.db)
+            {
+                self.proxy_hosts = hosts;
             } else {
-                self.proxy_jump_targets.clear();
+                self.proxy_hosts.clear();
+            }
+
+            // proxy destinations (use a proxy)
+            if let Ok(destinations) =
+                crate::db::hop::ConnectionHop::get_all_proxy_destination_ids(&mut self.db)
+            {
+                self.proxy_destinations = destinations;
+            } else {
+                self.proxy_destinations.clear();
             }
             self.update_search_filter();
         }
@@ -88,8 +102,14 @@ impl App {
 
     pub fn has_proxy(&self, connection: &Connection) -> bool {
         connection
-        .id
-        .map_or(false, |id| self.proxy_jump_targets.contains(&id))
+            .id
+            .is_some_and(|id| self.proxy_destinations.contains(&id))
+    }
+
+    pub fn is_proxy(&self, connection: &Connection) -> bool {
+        connection
+            .id
+            .is_some_and(|id| self.proxy_hosts.contains(&id))
     }
 
     pub fn update_search_filter(&mut self) {
@@ -148,15 +168,37 @@ impl App {
         results.sort_by(|a, b| {
             let conn_a = &self.connections[a.conn_index];
             let conn_b = &self.connections[b.conn_index];
-            
-            let a_is_proxy = conn_a.id.map_or(false, |id| self.proxy_jump_targets.contains(&id));
-            let b_is_proxy = conn_b.id.map_or(false, |id| self.proxy_jump_targets.contains(&id));
-            
-            if a_is_proxy != b_is_proxy {
-                a_is_proxy.cmp(&b_is_proxy)
-            } else {
-                b.score.cmp(&a.score)
-            }
+
+            let a_score = a.score;
+            let b_score = b.score;
+
+            // metadata (computed once per comparison)
+            let a_has_proxy = self.has_proxy(conn_a);
+            let a_is_proxy = self.is_proxy(conn_a);
+
+            let b_has_proxy = self.has_proxy(conn_b);
+            let b_is_proxy = self.is_proxy(conn_b);
+
+            // convert classification into stable priority tiers
+            let a_priority: u8 = match (a_has_proxy, a_is_proxy) {
+                (false, false) => 0, // default
+                (true, false)  => 1, // has_proxy
+                (false, true)  => 2, // is_proxy
+                (true, true)   => 3, // both
+            };
+
+            let b_priority: u8 = match (b_has_proxy, b_is_proxy) {
+                (false, false) => 0,
+                (true, false)  => 1,
+                (false, true)  => 2,
+                (true, true)   => 3,
+            };
+
+            // PRIMARY: fuzzy score (higher is better)
+            b_score
+                .cmp(&a_score)
+                // SECONDARY: proxy classification (lower tier first)
+                .then_with(|| a_priority.cmp(&b_priority))
         });
         
         self.filtered_connections = results;

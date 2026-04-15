@@ -24,13 +24,13 @@ pub fn render_search_results(f: &mut Frame, app: &App, area: Rect, dimmed: bool,
             let c = &app.connections[result.conn_index];
             let fav_icon = if c.is_favorite { "★ " } else { "  " };
             
-            let is_proxy = c.id.map_or(false, |id| app.proxy_jump_targets.contains(&id));
+            let is_proxy = app.is_proxy(c);
             let has_proxy = app.has_proxy(c);
 
             let base_style = if i == app.selected_connection_index && app.focus == crate::app::AppFocus::List {
                 Style::default().fg(Color::Yellow)
             } else if has_proxy {
-                Style::default().fg(Color::Red)
+                Style::default().fg(Color::LightBlue)
             } else if is_proxy {
                 Style::default().fg(Color::DarkGray)
             } else {
@@ -38,7 +38,7 @@ pub fn render_search_results(f: &mut Frame, app: &App, area: Rect, dimmed: bool,
             };
             
             // highlight matched characters
-            let highlight_style = base_style.patch(Style::default().fg(Color::Cyan).add_modifier(ratatui::style::Modifier::BOLD));
+            let highlight_style = base_style.patch(Style::default().fg(Color::Green).add_modifier(ratatui::style::Modifier::BOLD));
             
             let mut spans = vec![Span::styled(fav_icon, base_style)];
             

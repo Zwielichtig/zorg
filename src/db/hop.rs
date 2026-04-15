@@ -63,4 +63,15 @@ impl ConnectionHop {
             .load(db_connection)?;
         Ok(ids.into_iter().collect())
     }
+
+    pub fn get_all_proxy_destination_ids(
+        db_connection: &mut SqliteConnection,
+    ) -> QueryResult<std::collections::HashSet<i32>> {
+        let ids: Vec<i32> = connection_hops::table
+            .select(connection_hops::source_connection_id)
+            .distinct()
+            .load(db_connection)?;
+            
+        Ok(ids.into_iter().collect())
+    }
 }
