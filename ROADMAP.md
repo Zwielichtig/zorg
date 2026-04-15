@@ -47,8 +47,10 @@
 
 - favorites / pinned connections
 - reconnect last session
-- extened mouse support
+- extended mouse support
 - ...
+
+---
 
 ## 🔄 Import - Export
 
