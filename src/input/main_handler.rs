@@ -59,6 +59,14 @@ pub fn handle_main_input(app: &mut App, key: KeyEvent) -> bool {
             // TODO: Add functionalty for password protected keys + rework ui
             // } else if key.modifiers.contains(KeyModifiers::CONTROL) && key_pressed == 'k' {
             //     app.keys_modal.open();
+            } else if key.modifiers.contains(KeyModifiers::CONTROL) && key_pressed == 'p' {
+                if app.focus == AppFocus::List && app.selected_connection_index < app.filtered_connections.len() {
+                    let conn_idx = app.filtered_connections[app.selected_connection_index].conn_index;
+                    let conn = app.connections[conn_idx].clone();
+                    app.proxy_jumps_modal.open(&mut app.db, &conn);
+                }
+            } else if key.modifiers.contains(KeyModifiers::CONTROL) && key_pressed == 'h' {
+                app.show_help_modal = !app.show_help_modal;
             } else if app.focus == AppFocus::List {
                 if key_pressed == 'f' {
                     if app.selected_connection_index < app.filtered_connections.len() {
@@ -71,8 +79,6 @@ pub fn handle_main_input(app: &mut App, key: KeyEvent) -> bool {
                             }
                         }
                     }
-                } else if key_pressed == '?' {
-                    app.show_help_modal = !app.show_help_modal;
                 } else {
                     app.focus = AppFocus::Search;
                     app.input.push(key_pressed);

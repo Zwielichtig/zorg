@@ -15,6 +15,22 @@ pub fn handle_modal_input(app: &mut App, key: KeyEvent) -> bool {
             KeyCode::Char('a') => app.keys_modal.start_ssh_agent(),
             _ => {}
         }
+    }
+
+    if app.proxy_jumps_modal.is_open {
+        match key.code {
+            KeyCode::Esc => app.proxy_jumps_modal.close(),
+            KeyCode::Up => app.proxy_jumps_modal.previous(),
+            KeyCode::Down => app.proxy_jumps_modal.next(),
+            KeyCode::Char(' ') => app.proxy_jumps_modal.toggle_selected(),
+            KeyCode::Char('+') => app.proxy_jumps_modal.move_up(),
+            KeyCode::Char('-') => app.proxy_jumps_modal.move_down(),
+            KeyCode::Char('s') => {
+                app.proxy_jumps_modal.save(&mut app.db);
+                app.refresh_connections();
+            }
+            _ => {}
+        }
         return false;
     }
 

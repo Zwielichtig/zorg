@@ -24,8 +24,15 @@ pub fn render_search_results(f: &mut Frame, app: &App, area: Rect, dimmed: bool,
             let c = &app.connections[result.conn_index];
             let fav_icon = if c.is_favorite { "★ " } else { "  " };
             
+            let is_proxy = c.id.map_or(false, |id| app.proxy_jump_targets.contains(&id));
+            let has_proxy = app.has_proxy(c);
+
             let base_style = if i == app.selected_connection_index && app.focus == crate::app::AppFocus::List {
                 Style::default().fg(Color::Yellow)
+            } else if has_proxy {
+                Style::default().fg(Color::Red)
+            } else if is_proxy {
+                Style::default().fg(Color::DarkGray)
             } else {
                 Style::default().fg(Color::White)
             };

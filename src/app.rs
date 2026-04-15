@@ -2,6 +2,7 @@ use crate::db::connection::{Connection, NewConnection};
 use crate::db::history::History;
 use crate::ui::modals::create_connection::CreateConnectionModal;
 use crate::ui::modals::delete_connection::DeleteConnectionModal;
+use crate::ui::modals::proxy_jumps::ProxyJumpsModal;
 use diesel::SqliteConnection;
 use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
@@ -27,6 +28,8 @@ pub struct App {
     pub create_connection_modal: CreateConnectionModal,
     pub delete_connection_modal: DeleteConnectionModal,
     pub keys_modal: crate::ui::modals::keys::KeysModal,
+    pub proxy_jumps_modal: ProxyJumpsModal,
+    pub proxy_jump_targets: std::collections::HashSet<i32>,
     pub db: SqliteConnection,
     pub connections: Vec<Connection>,
     pub filtered_connections: Vec<FuzzyMatchResult>,
@@ -39,7 +42,6 @@ pub struct App {
 
 impl App {
     pub fn new(mut db: SqliteConnection) -> Self {
-        let connections = Connection::get_all(&mut db).unwrap_or_default();
         let recent_history = History::get_recent(&mut db, 10).unwrap_or_default();
         let mut app = Self {
             input: String::new(),
@@ -47,8 +49,10 @@ impl App {
             create_connection_modal: CreateConnectionModal::default(),
             delete_connection_modal: DeleteConnectionModal::default(),
             keys_modal: crate::ui::modals::keys::KeysModal::default(),
+            proxy_jumps_modal: ProxyJumpsModal::default(),
+            proxy_jump_targets: std::collections::HashSet::new(),
             db,
-            connections,
+            connections: Vec::new(),
             filtered_connections: Vec::new(),
             pending_ssh_connection: None,
             selected_connection_index: 0,
@@ -56,7 +60,7 @@ impl App {
             recent_history,
             focus: AppFocus::Search,
         };
-        app.update_search_filter();
+        app.refresh_connections();
         app
     }
 
@@ -73,8 +77,19 @@ impl App {
     pub fn refresh_connections(&mut self) {
         if let Ok(conns) = Connection::get_all(&mut self.db) {
             self.connections = conns;
+            if let Ok(targets) = crate::db::hop::ConnectionHop::get_all_jump_target_ids(&mut self.db) {
+                self.proxy_jump_targets = targets;
+            } else {
+                self.proxy_jump_targets.clear();
+            }
             self.update_search_filter();
         }
+    }
+
+    pub fn has_proxy(&self, connection: &Connection) -> bool {
+        connection
+        .id
+        .map_or(false, |id| self.proxy_jump_targets.contains(&id))
     }
 
     pub fn update_search_filter(&mut self) {
@@ -128,8 +143,21 @@ impl App {
                     });
                 }
             }
-            results.sort_by(|a, b| b.score.cmp(&a.score));
         }
+        
+        results.sort_by(|a, b| {
+            let conn_a = &self.connections[a.conn_index];
+            let conn_b = &self.connections[b.conn_index];
+            
+            let a_is_proxy = conn_a.id.map_or(false, |id| self.proxy_jump_targets.contains(&id));
+            let b_is_proxy = conn_b.id.map_or(false, |id| self.proxy_jump_targets.contains(&id));
+            
+            if a_is_proxy != b_is_proxy {
+                a_is_proxy.cmp(&b_is_proxy)
+            } else {
+                b.score.cmp(&a.score)
+            }
+        });
         
         self.filtered_connections = results;
         if self.selected_connection_index >= self.filtered_connections.len() && !self.filtered_connections.is_empty() {
