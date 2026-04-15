@@ -26,7 +26,7 @@ zorg
 ## ⬇️ Installation
 
 > [!TIP]
-> Get the compiled release [binary](https://github.com/Zwielichtig/zorg/releases)!
+> Get the compiled [release binary](https://github.com/Zwielichtig/zorg/releases)!
 
 ### Building from Source
 
