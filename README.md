@@ -11,7 +11,7 @@ Zorg provides a snappy, reliable experience directly in the terminal, eliminatin
 - **🚀 Lightning Fast TUI:** Built in Rust with [Ratatui](https://github.com/ratatui/ratatui) for an instantaneous, terminal-native experience
 - **🔍 Fuzzy Search:** Instantly find connections by name, username, or hostname with real-time fuzzy matching
 - **🗃️ Built-in Database:** Uses a self-contained SQLite database that is automatically managed to store connections securely, with zero setup required
-- **💻 Seamless Terminal Integration:** SSH authentication prompts and standard interactive sessions work flawlessly, feeling just like a native shell
+- **💻 Seamless Terminal Integration:** SSH authentication prompts and standard interactive sessions, as well as proxy jumps work flawlessly, feeling just like a native shell
 
 ## 🚀 Usage
 

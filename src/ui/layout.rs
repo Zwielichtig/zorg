@@ -1,7 +1,7 @@
 use crate::app::App;
 use crate::ui::components::{
     config_menu::render_config_menu, history::render_history, search_input::render_search_input,
-    connection_list::render_search_results,
+    connection_list::render_connection_list,
 };
 use ratatui::{
     layout::{Constraint, Direction, Layout},
@@ -40,11 +40,11 @@ pub fn draw(f: &mut Frame, app: &App) {
         .split(chunks[1]);
 
     render_search_input(f, app, left_chunks[0], dimmed, style);
-    render_search_results(f, app, left_chunks[1], dimmed, style);
+    render_connection_list(f, app, left_chunks[1], dimmed, style);
     render_history(f, right_chunks[0], dimmed);
     render_config_menu(f, right_chunks[1], dimmed);
 
-    let shortcuts = " [Enter] Connect  |  [f] Toggle Favorite  |  [Ctrl+n] New  |  [Ctrl+e] Edit  |  [Ctrl+d] Delete   |  [Up/Down] Navigate  |  [?] Full Help";
+    let shortcuts = " [Enter] Connect | [f] Toggle Favorite | [c-n] New | [c+e] Edit | [c+d] Delete | [c-p] Proxyjump | [↑/↓] Navigate | [c-h] Help";
     f.render_widget(
         Paragraph::new(shortcuts).style(Style::default().fg(Color::Yellow)),
         main_chunks[1],
@@ -56,14 +56,15 @@ pub fn draw(f: &mut Frame, app: &App) {
         let help_area = base_area.inner(ratatui::layout::Margin { horizontal: 2, vertical: 1 });
         let help_text = "== Zorg Shortcuts ==\n\n\
             [Enter]   Connect selected\n\
-            [f]       Toggle favorite status\n\
-            [Ctrl+n]  Create new connection\n\
-            [Ctrl+e]  Edit selected connection\n\
-            [Ctrl+d]  Delete selected connection\n\
             [Tab]     Navigate blocks\n\
-            [Up/Down] Navigate list\n\
-            [?]       Toggle this help modal\n\
-            [Ctrl+c]  Quit application\n\
+            [c-n]     Create new connection\n\
+            [c-e]     Edit selected connection\n\
+            [c-d]     Delete selected connection\n\
+            [c-p]     Manage Proxyjumps\n\
+            [f]       Toggle favorite status\n\
+            [↑/↓]     Navigate list\n\
+            [c-h]     Toggle this help modal\n\
+            [c-c]     Quit application\n\
             [Esc]     Close modal / Quit application";
         let help_block = crate::ui::utils::default_block_builder("Help (Press Esc to close)", false);
         f.render_widget(Paragraph::new(help_text).block(help_block), help_area);

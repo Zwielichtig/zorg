@@ -26,6 +26,17 @@ pub fn execute_ssh_connection(
     // 2. build ssh command
     let mut cmd = Command::new("ssh");
 
+    let proxy_jumps = crate::db::hop::ConnectionHop::get_jumps(db, conn.id.unwrap_or(0))
+        .unwrap_or_default();
+
+    if !proxy_jumps.is_empty() {
+        let jump_strings: Vec<String> = proxy_jumps.into_iter().map(|jump| {
+            let port_suffix = jump.port.map(|p| format!(":{}", p)).unwrap_or_else(|| "".to_string());
+            format!("{}@{}{}", jump.username, jump.hostname, port_suffix)
+        }).collect();
+        cmd.arg("-J").arg(jump_strings.join(","));
+    }
+
     if let Some(port) = conn.port {
         cmd.arg("-p").arg(port.to_string());
     }

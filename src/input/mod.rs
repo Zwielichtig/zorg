@@ -13,6 +13,8 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent) -> bool {
         handle_modal_input(app, key)
     } else if app.delete_connection_modal.is_open {
         handle_modal_input(app, key)
+    } else if app.proxy_jumps_modal.is_open {
+        handle_modal_input(app, key)
     } else {
         handle_main_input(app, key)
     }
