@@ -1,7 +1,7 @@
 use crate::app::App;
 use crate::ui::components::{
     config_menu::render_config_menu, history::render_history, search_input::render_search_input,
-    connection_list::render_search_results,
+    connection_list::render_connection_list,
 };
 use ratatui::{
     layout::{Constraint, Direction, Layout},
@@ -40,7 +40,7 @@ pub fn draw(f: &mut Frame, app: &App) {
         .split(chunks[1]);
 
     render_search_input(f, app, left_chunks[0], dimmed, style);
-    render_search_results(f, app, left_chunks[1], dimmed, style);
+    render_connection_list(f, app, left_chunks[1], dimmed, style);
     render_history(f, right_chunks[0], dimmed);
     render_config_menu(f, right_chunks[1], dimmed);
 
