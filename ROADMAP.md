@@ -21,11 +21,11 @@
 
 ---
 
-## 🔗 Multi-Hop Support
+## 🔗 Proxy-Jump Support
 
 **Advanced SSH routing capabilities**
 
-- multi-hop SSH connections
+- ~~proxy Jump SSH connections~~ <span style="color: #2ECC71;">[implemented]</span>
 - visual chain representation for proxy jumps (ASCII)
 
 ---
