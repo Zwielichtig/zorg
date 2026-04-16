@@ -25,7 +25,7 @@ pub fn handle_modal_input(app: &mut App, key: KeyEvent) -> bool {
             KeyCode::Char(' ') => app.proxy_jumps_modal.toggle_selected(),
             KeyCode::Char('+') => app.proxy_jumps_modal.move_up(),
             KeyCode::Char('-') => app.proxy_jumps_modal.move_down(),
-            KeyCode::Char('s') => {
+            KeyCode::Enter => {
                 app.proxy_jumps_modal.save(&mut app.db);
                 app.refresh_connections();
             }

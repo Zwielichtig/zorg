@@ -184,7 +184,7 @@ impl ProxyJumpsModal {
         let msg = self.message.as_deref().unwrap_or("");
         f.render_widget(Paragraph::new(msg).style(Style::default().fg(Color::Yellow)), chunks[1]);
         
-        let help = "Space: Toggle | +/-: Move Order | s: Save | Esc: Close";
+        let help = "Space: Toggle | +/-: Move Order | Enter: Save | Esc: Close";
         f.render_widget(Paragraph::new(help).style(Style::default().fg(Color::Gray)), chunks[2]);
     }
 }
