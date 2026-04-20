@@ -61,11 +61,11 @@ pub fn draw(f: &mut Frame, app: &App) {
             [Ctrl+e]     Edit selected connection\n\
             [Ctrl+d]     Delete selected connection\n\
             [Ctrl+p]     Manage Proxyjumps\n\
-            [f]       Toggle favorite status\n\
-            [↑/↓]     Navigate list\n\
+            [f]          Toggle favorite status\n\
+            [↑/↓]        Navigate list\n\
             [Ctrl+h]     Toggle this help modal\n\
             [Ctrl+c]     Quit application\n\
-            [Esc]     Close modal / Quit application";
+            [Esc]        Close modal / Quit application";
         let help_block = crate::ui::utils::default_block_builder("Help (Press Esc to close)", false);
         f.render_widget(Paragraph::new(help_text).block(help_block), help_area);
     }
