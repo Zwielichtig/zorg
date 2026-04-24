@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 diesel = { version = "2.2.0", features = ["sqlite", "chrono"] }
+libsqlite3-sys = { version = "0.36.0", features = ["bundled"] }
 diesel_migrations = "2.2.0"
 chrono = "0.4"
 dotenvy = "0.15"
