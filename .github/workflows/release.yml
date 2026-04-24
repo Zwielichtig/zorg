@@ -1,0 +1,120 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "zorg-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Binary
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+
+      - name: Install musl-tools
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build (release)
+        run: cargo build --release --target x86_64-unknown-linux-musl
+
+      - name: Prepare Binary
+        run: |
+          BINARY="target/x86_64-unknown-linux-musl/release/zorg"
+          strip "$BINARY"
+          mkdir -p dist
+          cp "$BINARY" dist/zorg
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zorg-binary
+          path: dist/zorg
+          retention-days: 1
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: zorg-binary
+          path: dist
+
+      - name: Get tag info
+        id: info
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          echo "tag_name=$TAG" >> $GITHUB_OUTPUT
+          
+          # Force-fetch tags for annotation extraction
+          git fetch --tags --force
+          
+          # Format Title
+          RAW="${TAG#zorg-}"
+          VERSION=$(echo "$RAW" | cut -d'-' -f1)
+          TITLE_PART=$(echo "$RAW" | cut -d'-' -s -f2-)
+          TITLE="Zorg ${VERSION}"
+          if [ -n "$TITLE_PART" ]; then
+            CLEAN_TITLE=$(echo "$TITLE_PART" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2)}1')
+            TITLE="${TITLE} - ${CLEAN_TITLE}"
+          fi
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+          
+          # Extract Message
+          MESSAGE=$(git tag -l "$TAG" --format='%(contents)')
+          echo "message<<EOF" >> $GITHUB_OUTPUT
+          echo "$MESSAGE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Generate Checksum
+        run: |
+          cd dist
+          sha256sum zorg > zorg.sha256
+
+      - name: Prepare Body
+        id: body
+        run: |
+          BODY=$(printf "%s\n\n%s\n" \
+          "${{ steps.info.outputs.message }}" \
+          "## Installation:
+          
+          Download the binary, give it execution rights and move it into your \$PATH.
+          
+          \`\`\`bash
+          chmod +x zorg
+          mv zorg ~/.local/bin/
+          \`\`\`")
+          
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ steps.info.outputs.title }}
+          tag_name: ${{ steps.info.outputs.tag_name }}
+          body: ${{ steps.body.outputs.content }}
+          files: |
+            dist/zorg
+            dist/zorg.sha256
