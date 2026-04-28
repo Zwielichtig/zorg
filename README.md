@@ -4,6 +4,8 @@
 
 Introducing **Zorg**, a TUI application designed to make managing and orchestrating SSH connections effortless and fast. 
 
+![Screenshot of the main interface](images/main_interface.png)
+
 Zorg provides a snappy, reliable experience directly in the terminal, eliminating the need to memorize complex SSH connection strings or rely on clunky GUIs.
 
 ## ✨ Key Features

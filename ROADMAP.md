@@ -3,7 +3,7 @@
 > [!TIP]
 > This roadmap outlines planned features and is subject to change and expansion.
 
-## 📊 History Functionality
+## 📊 ~~History Functionality~~ $${\color{green}[implemented]}$$
 
 **Gain deeper visibility into connection activity and usages**
 
@@ -25,7 +25,7 @@
 
 **Advanced SSH routing capabilities**
 
-- ~~proxy Jump SSH connections~~ <span style="color: #2ECC71;">[implemented]</span>
+- ~~proxy Jump SSH connections~~ $${\color{green}[implemented]}$$
 - visual chain representation for proxy jumps (ASCII)
 
 ---

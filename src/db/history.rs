@@ -47,4 +47,16 @@ impl History {
             .limit(limit)
             .load(db_connection)
     }
+
+    pub fn get_by_connection(
+        db_connection: &mut SqliteConnection,
+        conn_id: i32,
+        limit: i64,
+    ) -> QueryResult<Vec<History>> {
+        history::table
+            .filter(history::connection_id.eq(conn_id))
+            .order(history::started_at.desc())
+            .limit(limit)
+            .load(db_connection)
+    }
 }
