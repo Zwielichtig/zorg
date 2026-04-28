@@ -1,6 +1,31 @@
 use crate::app::{App, AppFocus};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
+// ── char-level string helpers ────────────────────────────────────────────────
+
+fn char_byte_offset(s: &str, char_idx: usize) -> usize {
+    s.char_indices()
+        .nth(char_idx)
+        .map(|(b, _)| b)
+        .unwrap_or(s.len())
+}
+
+fn insert_at_char(s: &mut String, char_idx: usize, c: char) {
+    let byte_idx = char_byte_offset(s, char_idx);
+    s.insert(byte_idx, c);
+}
+
+fn remove_char_before(s: &mut String, char_idx: usize) {
+    if char_idx == 0 {
+        return;
+    }
+    let end = char_byte_offset(s, char_idx);
+    let start = char_byte_offset(s, char_idx - 1);
+    s.drain(start..end);
+}
+
+// ── handler ──────────────────────────────────────────────────────────────────
+
 pub fn handle_main_input(app: &mut App, key: KeyEvent) -> bool {
     if key.code == KeyCode::Tab {
         app.focus = if app.focus == AppFocus::Search {
@@ -8,6 +33,9 @@ pub fn handle_main_input(app: &mut App, key: KeyEvent) -> bool {
         } else {
             AppFocus::Search
         };
+        if app.focus == AppFocus::List {
+            app.refresh_connection_history();
+        }
         return false;
     }
 
@@ -15,6 +43,7 @@ pub fn handle_main_input(app: &mut App, key: KeyEvent) -> bool {
         KeyCode::Enter => {
             if app.focus == AppFocus::Search {
                 app.focus = AppFocus::List;
+                app.refresh_connection_history();
             } else {
                 if app.selected_connection_index < app.filtered_connections.len() {
                     let conn_idx = app.filtered_connections[app.selected_connection_index].conn_index;
@@ -22,10 +51,22 @@ pub fn handle_main_input(app: &mut App, key: KeyEvent) -> bool {
                 }
             }
         }
+        KeyCode::Left => {
+            if app.focus == AppFocus::Search {
+                app.input_cursor = app.input_cursor.saturating_sub(1);
+            }
+        }
+        KeyCode::Right => {
+            if app.focus == AppFocus::Search {
+                let len = app.input.chars().count();
+                app.input_cursor = (app.input_cursor + 1).min(len);
+            }
+        }
         KeyCode::Up => {
             if app.focus == AppFocus::List {
                 if app.selected_connection_index > 0 {
                     app.selected_connection_index -= 1;
+                    app.refresh_connection_history();
                 }
             }
         }
@@ -33,7 +74,22 @@ pub fn handle_main_input(app: &mut App, key: KeyEvent) -> bool {
             if app.focus == AppFocus::List {
                 if app.selected_connection_index + 1 < app.filtered_connections.len() {
                     app.selected_connection_index += 1;
+                    app.refresh_connection_history();
                 }
+            }
+        }
+        KeyCode::PageUp => {
+            if app.focus == AppFocus::Search {
+                app.scroll_history_up(5);
+            } else if app.focus == AppFocus::List {
+                app.scroll_connection_history_up(5);
+            }
+        }
+        KeyCode::PageDown => {
+            if app.focus == AppFocus::Search {
+                app.scroll_history_down(5);
+            } else if app.focus == AppFocus::List {
+                app.scroll_connection_history_down(5);
             }
         }
         KeyCode::Char(key_pressed) => {
@@ -80,18 +136,25 @@ pub fn handle_main_input(app: &mut App, key: KeyEvent) -> bool {
                         }
                     }
                 } else {
+                    // Switch focus to Search and type the key
                     app.focus = AppFocus::Search;
-                    app.input.push(key_pressed);
+                    app.input_cursor = app.input.chars().count();
+                    insert_at_char(&mut app.input, app.input_cursor, key_pressed);
+                    app.input_cursor += 1;
                     app.update_search_filter();
                 }
             } else {
-                app.input.push(key_pressed);
+                insert_at_char(&mut app.input, app.input_cursor, key_pressed);
+                app.input_cursor += 1;
                 app.update_search_filter();
             }
         }
         KeyCode::Backspace => {
             if app.focus == AppFocus::Search {
-                app.input.pop();
+                if app.input_cursor > 0 {
+                    remove_char_before(&mut app.input, app.input_cursor);
+                    app.input_cursor -= 1;
+                }
                 app.update_search_filter();
             }
         }

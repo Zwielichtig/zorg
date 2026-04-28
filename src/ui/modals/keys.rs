@@ -5,7 +5,7 @@ use ratatui::{
     Frame,
 };
 use std::cell::RefCell;
-use crate::ui::utils::{center_rect, default_block_builder};
+use crate::ui::utils::{center_rect_at_least, default_block_builder};
 use crate::ssh::keys::{SshKeyInfo, get_available_keys};
 use crate::ssh::agent::{is_agent_running, add_key_to_agent, start_agent};
 
@@ -119,7 +119,7 @@ impl KeysModal {
             return;
         }
 
-        let base_area = center_rect(64, 64, area);
+        let base_area = center_rect_at_least(64, 64, 54, 16, area);
         f.render_widget(Clear, base_area);
 
         let popup_area = base_area.inner(ratatui::layout::Margin { horizontal: 2, vertical: 1 });

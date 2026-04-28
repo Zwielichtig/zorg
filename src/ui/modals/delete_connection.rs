@@ -5,7 +5,7 @@ use ratatui::{
     widgets::{Clear, Paragraph},
     Frame,
 };
-use crate::ui::utils::{center_rect, default_block_builder};
+use crate::ui::utils::{center_rect_at_least, default_block_builder};
 
 pub struct DeleteConnectionModal {
     pub is_open: bool,
@@ -45,7 +45,7 @@ impl DeleteConnectionModal {
             return;
         }
 
-        let base_area = center_rect(44, 29, area);
+        let base_area = center_rect_at_least(44, 50, 44, 12, area);
         f.render_widget(Clear, base_area);
 
         let popup_area = base_area.inner(ratatui::layout::Margin { horizontal: 2, vertical: 1 });

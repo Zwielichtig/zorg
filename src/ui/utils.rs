@@ -1,26 +1,24 @@
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::Rect,
     widgets::{Block, Borders, BorderType},
 };
 
-pub fn center_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
-    let popup_layout = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Percentage((100 - percent_y) / 2),
-            Constraint::Percentage(percent_y),
-            Constraint::Percentage((100 - percent_y) / 2),
-        ])
-        .split(r);
-
-    Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage((100 - percent_x) / 2),
-            Constraint::Percentage(percent_x),
-            Constraint::Percentage((100 - percent_x) / 2),
-        ])
-        .split(popup_layout[1])[1]
+pub fn center_rect_at_least(
+    percent_x: u16,
+    percent_y: u16,
+    min_w: u16,
+    min_h: u16,
+    r: Rect,
+) -> Rect {
+    let w = ((r.width as u32 * percent_x as u32 / 100) as u16)
+        .max(min_w)
+        .min(r.width);
+    let h = ((r.height as u32 * percent_y as u32 / 100) as u16)
+        .max(min_h)
+        .min(r.height);
+    let x = r.x + r.width.saturating_sub(w) / 2;
+    let y = r.y + r.height.saturating_sub(h) / 2;
+    Rect::new(x, y, w, h)
 }
 
 pub fn default_block_builder(title: &str, dimmed: bool) -> Block<'static> {

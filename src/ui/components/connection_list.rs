@@ -87,12 +87,11 @@ pub fn render_connection_list(f: &mut Frame, app: &App, area: Rect, dimmed: bool
                 let indicator_width = UnicodeWidthStr::width(indicator);
                 let content_width = line.width();
 
-                if content_width + indicator_width < inner_width {
+                if content_width + indicator_width <= inner_width {
                     let padding = inner_width - content_width - indicator_width;
                     line.spans.push(Span::raw(" ".repeat(padding)));
+                    line.spans.push(Span::styled(indicator, base_style));
                 }
-
-                line.spans.push(Span::styled(indicator, base_style));
             }
 
             ListItem::new(line)

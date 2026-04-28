@@ -59,6 +59,7 @@ pub fn handle_modal_input(app: &mut App, key: KeyEvent) -> bool {
         KeyCode::Tab => {
             app.create_connection_modal.active_field =
                 (app.create_connection_modal.active_field + 1) % 7;
+            app.create_connection_modal.cursor_to_end();
         }
         KeyCode::BackTab => {
             if app.create_connection_modal.active_field == 0 {
@@ -66,39 +67,26 @@ pub fn handle_modal_input(app: &mut App, key: KeyEvent) -> bool {
             } else {
                 app.create_connection_modal.active_field -= 1;
             }
+            app.create_connection_modal.cursor_to_end();
+        }
+        KeyCode::Left => {
+            app.create_connection_modal.move_cursor_left();
+        }
+        KeyCode::Right => {
+            app.create_connection_modal.move_cursor_right();
         }
         KeyCode::Char(c) => {
-            let field: Option<&mut String> = match app.create_connection_modal.active_field {
-                0 => Some(&mut app.create_connection_modal.name),
-                1 => Some(&mut app.create_connection_modal.username),
-                2 => Some(&mut app.create_connection_modal.hostname),
-                3 => Some(&mut app.create_connection_modal.port),
-                4 => Some(&mut app.create_connection_modal.identity_file),
-                5 => Some(&mut app.create_connection_modal.note),
-                6 => None,
-                _ => unreachable!(),
-            };
-            if let Some(f) = field {
-                f.push(c);
+            if app.create_connection_modal.active_field < 6 {
+                app.create_connection_modal.insert_char_at_cursor(c);
             }
         }
         KeyCode::Backspace => {
-            let field: Option<&mut String> = match app.create_connection_modal.active_field {
-                0 => Some(&mut app.create_connection_modal.name),
-                1 => Some(&mut app.create_connection_modal.username),
-                2 => Some(&mut app.create_connection_modal.hostname),
-                3 => Some(&mut app.create_connection_modal.port),
-                4 => Some(&mut app.create_connection_modal.identity_file),
-                5 => Some(&mut app.create_connection_modal.note),
-                6 => None,
-                _ => None,
-            };
-            if let Some(f) = field {
-                f.pop();
-            }
+            app.create_connection_modal.backspace_at_cursor();
         }
         KeyCode::Enter => {
-            if app.create_connection_modal.active_field == 6 && app.create_connection_modal.is_valid() {
+            if app.create_connection_modal.active_field == 6
+                && app.create_connection_modal.is_valid()
+            {
                 app.submit_connection();
             }
         }

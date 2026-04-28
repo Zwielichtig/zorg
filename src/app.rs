@@ -24,6 +24,7 @@ pub enum AppFocus {
 
 pub struct App {
     pub input: String,
+    pub input_cursor: usize,
     pub messages: Vec<String>,
     pub create_connection_modal: CreateConnectionModal,
     pub delete_connection_modal: DeleteConnectionModal,
@@ -38,14 +39,18 @@ pub struct App {
     pub selected_connection_index: usize,
     pub show_help_modal: bool,
     pub recent_history: Vec<History>,
+    pub history_scroll: usize,
+    pub connection_history: Vec<History>,
+    pub connection_history_scroll: usize,
     pub focus: AppFocus,
 }
 
 impl App {
     pub fn new(mut db: SqliteConnection) -> Self {
-        let recent_history = History::get_recent(&mut db, 10).unwrap_or_default();
+        let recent_history = History::get_recent(&mut db, 50).unwrap_or_default();
         let mut app = Self {
             input: String::new(),
+            input_cursor: 0,
             messages: Vec::new(),
             create_connection_modal: CreateConnectionModal::default(),
             delete_connection_modal: DeleteConnectionModal::default(),
@@ -60,6 +65,9 @@ impl App {
             selected_connection_index: 0,
             show_help_modal: false,
             recent_history,
+            history_scroll: 0,
+            connection_history: Vec::new(),
+            connection_history_scroll: 0,
             focus: AppFocus::Search,
         };
         app.refresh_connections();
@@ -71,9 +79,61 @@ impl App {
     }
 
     pub fn refresh_history(&mut self) {
-        if let Ok(hist) = History::get_recent(&mut self.db, 10) {
+        if let Ok(hist) = History::get_recent(&mut self.db, 50) {
             self.recent_history = hist;
         }
+        // Clamp scroll in case the new history is shorter
+        self.clamp_history_scroll();
+    }
+
+    pub fn scroll_history_up(&mut self, step: usize) {
+        self.history_scroll = self.history_scroll.saturating_sub(step);
+    }
+
+    pub fn scroll_history_down(&mut self, step: usize) {
+        let max = self.recent_history.len().saturating_sub(1);
+        self.history_scroll = (self.history_scroll + step).min(max);
+    }
+
+    fn clamp_history_scroll(&mut self) {
+        let max = self.recent_history.len().saturating_sub(1);
+        self.history_scroll = self.history_scroll.min(max);
+    }
+
+    pub fn refresh_connection_history(&mut self) {
+        if self.filtered_connections.is_empty()
+            || self.selected_connection_index >= self.filtered_connections.len()
+        {
+            self.connection_history = Vec::new();
+            self.connection_history_scroll = 0;
+            return;
+        }
+
+        let conn_idx = self.filtered_connections[self.selected_connection_index].conn_index;
+        let conn_id = self.connections[conn_idx].id;
+
+        if let Some(id) = conn_id {
+            if let Ok(hist) = History::get_by_connection(&mut self.db, id, 50) {
+                self.connection_history = hist;
+            }
+        } else {
+            self.connection_history = Vec::new();
+        }
+        self.clamp_connection_history_scroll();
+    }
+
+    pub fn scroll_connection_history_up(&mut self, step: usize) {
+        self.connection_history_scroll = self.connection_history_scroll.saturating_sub(step);
+    }
+
+    pub fn scroll_connection_history_down(&mut self, step: usize) {
+        let max = self.connection_history.len().saturating_sub(1);
+        self.connection_history_scroll = (self.connection_history_scroll + step).min(max);
+    }
+
+    fn clamp_connection_history_scroll(&mut self) {
+        let max = self.connection_history.len().saturating_sub(1);
+        self.connection_history_scroll = self.connection_history_scroll.min(max);
     }
 
     pub fn refresh_connections(&mut self) {
