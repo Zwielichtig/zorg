@@ -121,3 +121,91 @@ jobs:
           files: |
             dist/zorg
             dist/zorg.sha256
+
+  update-aur:
+    name: Update AUR Packages
+    needs: release
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Install tools
+        run: pacman -Syu --noconfirm git openssh curl base-devel
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Extract version
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#zorg-v}"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Compute checksums
+        id: sums
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          BINARY_B2=$(curl -sL "https://github.com/Zwielichtig/zorg/releases/download/${TAG}/zorg" | b2sum | cut -d' ' -f1)
+          SOURCE_B2=$(curl -sL "https://github.com/Zwielichtig/zorg/archive/refs/tags/${TAG}.tar.gz" | b2sum | cut -d' ' -f1)
+          LICENSE_B2=$(curl -sL "https://raw.githubusercontent.com/Zwielichtig/zorg/refs/tags/${TAG}/LICENSE.md" | b2sum | cut -d' ' -f1)
+          echo "binary=$BINARY_B2" >> $GITHUB_OUTPUT
+          echo "source=$SOURCE_B2" >> $GITHUB_OUTPUT
+          echo "license=$LICENSE_B2" >> $GITHUB_OUTPUT
+
+      - name: Setup AUR SSH
+        env:
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$AUR_SSH_KEY" > ~/.ssh/aur_ed25519
+          chmod 600 ~/.ssh/aur_ed25519
+          ssh-keyscan -t ed25519 aur.archlinux.org >> ~/.ssh/known_hosts
+          printf 'Host aur.archlinux.org\n  IdentityFile ~/.ssh/aur_ed25519\n  User aur\n' >> ~/.ssh/config
+          chmod 600 ~/.ssh/config
+
+      - name: Configure git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update zorg-bin on AUR
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          BINARY_B2: ${{ steps.sums.outputs.binary }}
+          LICENSE_B2: ${{ steps.sums.outputs.license }}
+        run: |
+          git clone ssh://aur@aur.archlinux.org/zorg-bin.git /tmp/aur-zorg-bin
+
+          # Fill in version and checksums from the repo template
+          sed \
+            -e "s/^pkgver=.*/pkgver=${VERSION}/" \
+            -e "s/BINARY_B2SUM/${BINARY_B2}/" \
+            -e "s/LICENSE_B2SUM/${LICENSE_B2}/" \
+            aur/zorg-bin/PKGBUILD > /tmp/aur-zorg-bin/PKGBUILD
+
+          cd /tmp/aur-zorg-bin
+          makepkg --printsrcinfo > .SRCINFO
+          git add PKGBUILD .SRCINFO
+          git diff --cached --quiet || git commit -m "Update to ${VERSION}"
+          git push
+
+      - name: Update zorg on AUR
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          SOURCE_B2: ${{ steps.sums.outputs.source }}
+        run: |
+          git clone ssh://aur@aur.archlinux.org/zorg.git /tmp/aur-zorg
+
+          sed \
+            -e "s/^pkgver=.*/pkgver=${VERSION}/" \
+            -e "s/SOURCE_B2SUM/${SOURCE_B2}/" \
+            aur/zorg/PKGBUILD > /tmp/aur-zorg/PKGBUILD
+
+          cd /tmp/aur-zorg
+          makepkg --printsrcinfo > .SRCINFO
+          git add PKGBUILD .SRCINFO
+          git diff --cached --quiet || git commit -m "Update to ${VERSION}"
+          git push
