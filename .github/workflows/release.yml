@@ -166,11 +166,11 @@ jobs:
           ssh-keyscan -t rsa,ecdsa,ed25519 aur.archlinux.org >> /root/.ssh/known_hosts
           chmod 644 /root/.ssh/known_hosts
           cat >> /root/.ssh/config << 'EOF'
-Host aur.archlinux.org
-  IdentityFile /root/.ssh/aur_ed25519
-  User aur
-  StrictHostKeyChecking=accept-new
-EOF
+          Host aur.archlinux.org
+            IdentityFile /root/.ssh/aur_ed25519
+            User aur
+            StrictHostKeyChecking=accept-new
+          EOF
           chmod 600 /root/.ssh/config
 
       - name: Configure git
