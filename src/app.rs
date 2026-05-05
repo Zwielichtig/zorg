@@ -7,6 +7,23 @@ use diesel::SqliteConnection;
 use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
 
+/// Cached proxy topology for the currently selected connection.
+pub enum ProxyInfo {
+    /// The selected connection has no proxy involvement.
+    None,
+    /// The selected connection is the final SSH destination; `hops` are the
+    /// ordered jump hosts that lead to it.
+    Destination { hops: Vec<Connection> },
+    /// The selected connection is used as a jump host by other connections.
+    /// Each entry is `(ordered_hops_for_dest, destination_connection)`.
+    JumpHost { chains: Vec<(Vec<Connection>, Connection)> },
+    /// The selected connection is both a jump host and itself a proxy-destination.
+    Both {
+        hops: Vec<Connection>,
+        chains: Vec<(Vec<Connection>, Connection)>,
+    },
+}
+
 #[derive(Clone, Default)]
 pub struct FuzzyMatchResult {
     pub conn_index: usize,
@@ -43,6 +60,7 @@ pub struct App {
     pub connection_history: Vec<History>,
     pub connection_history_scroll: usize,
     pub focus: AppFocus,
+    pub selected_proxy_info: ProxyInfo,
 }
 
 impl App {
@@ -69,6 +87,7 @@ impl App {
             connection_history: Vec::new(),
             connection_history_scroll: 0,
             focus: AppFocus::Search,
+            selected_proxy_info: ProxyInfo::None,
         };
         app.refresh_connections();
         app
@@ -134,6 +153,72 @@ impl App {
     fn clamp_connection_history_scroll(&mut self) {
         let max = self.connection_history.len().saturating_sub(1);
         self.connection_history_scroll = self.connection_history_scroll.min(max);
+    }
+
+    /// Refresh the cached proxy-chain data for the currently selected connection.
+    /// Call this whenever the selection or connection data changes.
+    pub fn refresh_proxy_info(&mut self) {
+        if self.filtered_connections.is_empty()
+            || self.selected_connection_index >= self.filtered_connections.len()
+        {
+            self.selected_proxy_info = ProxyInfo::None;
+            return;
+        }
+
+        let conn_idx = self.filtered_connections[self.selected_connection_index].conn_index;
+        // Copy primitive data so we hold no reference into self.connections during the DB calls.
+        let conn_id = self.connections[conn_idx].id;
+        let has_proxy = conn_id.is_some_and(|id| self.proxy_destinations.contains(&id));
+        let is_proxy = conn_id.is_some_and(|id| self.proxy_hosts.contains(&id));
+
+        self.selected_proxy_info = match (has_proxy, is_proxy) {
+            (false, false) => ProxyInfo::None,
+            (true, false) => {
+                let hops = conn_id
+                    .and_then(|id| {
+                        crate::db::hop::ConnectionHop::get_jumps(&mut self.db, id).ok()
+                    })
+                    .unwrap_or_default();
+                ProxyInfo::Destination { hops }
+            }
+            (false, true) => {
+                let chains = self.build_proxy_chains(conn_id);
+                ProxyInfo::JumpHost { chains }
+            }
+            (true, true) => {
+                let hops = conn_id
+                    .and_then(|id| {
+                        crate::db::hop::ConnectionHop::get_jumps(&mut self.db, id).ok()
+                    })
+                    .unwrap_or_default();
+                let chains = self.build_proxy_chains(conn_id);
+                ProxyInfo::Both { hops, chains }
+            }
+        };
+    }
+
+    /// For a connection that acts as a jump host, collect every destination
+    /// that routes through it, together with that destination's ordered hop list.
+    fn build_proxy_chains(
+        &mut self,
+        conn_id: Option<i32>,
+    ) -> Vec<(Vec<Connection>, Connection)> {
+        let Some(id) = conn_id else {
+            return Vec::new();
+        };
+        let dest_conns =
+            crate::db::hop::ConnectionHop::get_destinations_for_hop(&mut self.db, id)
+                .unwrap_or_default();
+        let mut chains = Vec::new();
+        for dest in dest_conns {
+            if let Some(dest_id) = dest.id {
+                let hops =
+                    crate::db::hop::ConnectionHop::get_jumps(&mut self.db, dest_id)
+                        .unwrap_or_default();
+                chains.push((hops, dest));
+            }
+        }
+        chains
     }
 
     pub fn refresh_connections(&mut self) {
@@ -267,6 +352,7 @@ impl App {
         } else if self.filtered_connections.is_empty() {
             self.selected_connection_index = 0;
         }
+        self.refresh_proxy_info();
     }
 
     pub fn submit_connection(&mut self) {

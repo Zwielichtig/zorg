@@ -41,7 +41,7 @@ pub fn draw(f: &mut Frame, app: &App) {
 
     render_search_input(f, app, left_chunks[0], dimmed, style);
     render_connection_list(f, app, left_chunks[1], dimmed, style);
-    render_connection_details(f, right_chunks[0], dimmed);
+    render_connection_details(f, app, right_chunks[0], dimmed);
     render_history(f, app, right_chunks[1], dimmed);
 
     let shortcuts = " [Enter] Connect | [^n] New | [^e] Edit | [^d] Delete | [^p] Proxyjump | [↑/↓] Navigate | [^h] Help";

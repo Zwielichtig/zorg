@@ -74,11 +74,6 @@ pub fn render_connection_list(f: &mut Frame, app: &App, area: Rect, dimmed: bool
                 };
 
             push_marked_string(&mut spans, &c.name, &name_idx);
-            spans.push(Span::styled(" (", base_style));
-            push_marked_string(&mut spans, &c.username, &user_idx);
-            spans.push(Span::styled("@", base_style));
-            push_marked_string(&mut spans, &c.hostname, &host_idx);
-            spans.push(Span::styled(")", base_style));
 
             let mut line = Line::from(spans);
 
