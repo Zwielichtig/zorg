@@ -130,7 +130,9 @@ jobs:
       image: archlinux:latest
     steps:
       - name: Install tools
-        run: pacman -Syu --noconfirm git openssh curl base-devel
+        run: |
+          pacman -Syu --noconfirm git openssh curl base-devel
+          useradd -m builder
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -165,12 +167,7 @@ jobs:
           chmod 600 /root/.ssh/aur_ed25519
           ssh-keyscan -t rsa,ecdsa,ed25519 aur.archlinux.org >> /root/.ssh/known_hosts
           chmod 644 /root/.ssh/known_hosts
-          cat >> /root/.ssh/config << 'EOF'
-          Host aur.archlinux.org
-            IdentityFile /root/.ssh/aur_ed25519
-            User aur
-            StrictHostKeyChecking=accept-new
-          EOF
+          printf 'Host aur.archlinux.org\n  IdentityFile /root/.ssh/aur_ed25519\n  User aur\n  StrictHostKeyChecking accept-new\n' > /root/.ssh/config
           chmod 600 /root/.ssh/config
 
       - name: Configure git
@@ -194,7 +191,8 @@ jobs:
             aur/zorg-bin/PKGBUILD > /tmp/aur-zorg-bin/PKGBUILD
 
           cd /tmp/aur-zorg-bin
-          makepkg --printsrcinfo > .SRCINFO
+          chown -R builder .
+          su builder -c "makepkg --printsrcinfo" > .SRCINFO
           git add PKGBUILD .SRCINFO
           git diff --cached --quiet || git commit -m "Update to ${VERSION}"
           git push
@@ -212,7 +210,8 @@ jobs:
             aur/zorg/PKGBUILD > /tmp/aur-zorg/PKGBUILD
 
           cd /tmp/aur-zorg
-          makepkg --printsrcinfo > .SRCINFO
+          chown -R builder .
+          su builder -c "makepkg --printsrcinfo" > .SRCINFO
           git add PKGBUILD .SRCINFO
           git diff --cached --quiet || git commit -m "Update to ${VERSION}"
           git push
