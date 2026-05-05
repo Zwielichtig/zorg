@@ -173,14 +173,7 @@ fn render_connection_history(
     inner_width: usize,
     dimmed: bool,
 ) {
-    let title = if !app.filtered_connections.is_empty()
-        && app.selected_connection_index < app.filtered_connections.len()
-    {
-        let idx = app.filtered_connections[app.selected_connection_index].conn_index;
-        format!("History – {}", app.connections[idx].name)
-    } else {
-        "History".to_string()
-    };
+    let title = "History".to_string();
 
     let block = default_block_builder(&title, dimmed);
 

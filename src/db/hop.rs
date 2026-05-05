@@ -64,6 +64,25 @@ impl ConnectionHop {
         Ok(ids.into_iter().collect())
     }
 
+    /// Returns every connection that lists `hop_id` as one of its jump targets.
+    /// Used to build the proxy-chain diagram when viewing a jump-host connection.
+    pub fn get_destinations_for_hop(
+        db_connection: &mut SqliteConnection,
+        hop_id: i32,
+    ) -> QueryResult<Vec<Connection>> {
+        use super::schema::{connection_hops, connections};
+
+        connection_hops::table
+            .filter(connection_hops::target_connection_id.eq(hop_id))
+            .inner_join(
+                connections::table
+                    .on(connection_hops::source_connection_id.nullable().eq(connections::id)),
+            )
+            .select(Connection::as_select())
+            .distinct()
+            .load::<Connection>(db_connection)
+    }
+
     pub fn get_all_proxy_destination_ids(
         db_connection: &mut SqliteConnection,
     ) -> QueryResult<std::collections::HashSet<i32>> {

@@ -67,6 +67,7 @@ pub fn handle_main_input(app: &mut App, key: KeyEvent) -> bool {
                 if app.selected_connection_index > 0 {
                     app.selected_connection_index -= 1;
                     app.refresh_connection_history();
+                    app.refresh_proxy_info();
                 }
             }
         }
@@ -75,6 +76,7 @@ pub fn handle_main_input(app: &mut App, key: KeyEvent) -> bool {
                 if app.selected_connection_index + 1 < app.filtered_connections.len() {
                     app.selected_connection_index += 1;
                     app.refresh_connection_history();
+                    app.refresh_proxy_info();
                 }
             }
         }
