@@ -1,0 +1,15 @@
+pkgbase = zorg-bin
+	pkgdesc = A TUI SSH connection manager and orchestrator
+	pkgver = 1.4.0
+	pkgrel = 1
+	url = https://github.com/Zwielichtig/zorg
+	arch = x86_64
+	license = GPL-3.0-only
+	provides = zorg
+	conflicts = zorg
+	source = zorg-1.4.0::https://github.com/Zwielichtig/zorg/releases/download/zorg-v1.4.0/zorg
+	source = LICENSE::https://raw.githubusercontent.com/Zwielichtig/zorg/refs/tags/zorg-v1.4.0/LICENSE.md
+	b2sums = BINARY_B2SUM
+	b2sums = LICENSE_B2SUM
+
+pkgname = zorg-bin

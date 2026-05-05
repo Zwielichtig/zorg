@@ -1,0 +1,23 @@
+# Maintainer: zwielichtig <zwielichtig@users.noreply.github.com>
+pkgname=zorg-bin
+pkgver=1.4.0
+pkgrel=1
+pkgdesc='A TUI SSH connection manager and orchestrator'
+arch=('x86_64')
+url='https://github.com/Zwielichtig/zorg'
+license=('GPL-3.0-only')
+provides=('zorg')
+conflicts=('zorg')
+source=(
+  "zorg-${pkgver}::https://github.com/Zwielichtig/zorg/releases/download/zorg-v${pkgver}/zorg"
+  "LICENSE::https://raw.githubusercontent.com/Zwielichtig/zorg/refs/tags/zorg-v${pkgver}/LICENSE.md"
+)
+b2sums=(
+  'BINARY_B2SUM'
+  'LICENSE_B2SUM'
+)
+
+package() {
+  install -Dm0755 "zorg-${pkgver}" "${pkgdir}/usr/bin/zorg"
+  install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}
