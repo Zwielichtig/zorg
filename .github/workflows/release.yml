@@ -159,12 +159,19 @@ jobs:
         env:
           AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
         run: |
-          mkdir -p ~/.ssh
-          echo "$AUR_SSH_KEY" > ~/.ssh/aur_ed25519
-          chmod 600 ~/.ssh/aur_ed25519
-          ssh-keyscan -t ed25519 aur.archlinux.org >> ~/.ssh/known_hosts
-          printf 'Host aur.archlinux.org\n  IdentityFile ~/.ssh/aur_ed25519\n  User aur\n' >> ~/.ssh/config
-          chmod 600 ~/.ssh/config
+          mkdir -p /root/.ssh
+          chmod 700 /root/.ssh
+          echo "$AUR_SSH_KEY" > /root/.ssh/aur_ed25519
+          chmod 600 /root/.ssh/aur_ed25519
+          ssh-keyscan -t rsa,ecdsa,ed25519 aur.archlinux.org >> /root/.ssh/known_hosts
+          chmod 644 /root/.ssh/known_hosts
+          cat >> /root/.ssh/config << 'EOF'
+Host aur.archlinux.org
+  IdentityFile /root/.ssh/aur_ed25519
+  User aur
+  StrictHostKeyChecking=accept-new
+EOF
+          chmod 600 /root/.ssh/config
 
       - name: Configure git
         run: |
