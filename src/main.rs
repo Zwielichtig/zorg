@@ -7,10 +7,21 @@ mod ssh;
 use app::App;
 use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io;
-
 use crossterm::event::{self, Event};
+use clap::Parser;
+
+#[derive(Parser)]
+#[command(
+    name = "zorg",
+    version,
+    about = "A TUI SSH connection manager"
+)]
+struct Cli {}
+
 
 fn main() -> Result<(), io::Error> {
+    let _cli = Cli::parse();
+
     crossterm::terminal::enable_raw_mode()?;
     let mut stdout = io::stdout();
     crossterm::execute!(
