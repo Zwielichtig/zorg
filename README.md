@@ -29,17 +29,12 @@ zorg
 
 ### Arch Linux (AUR)
 
-Install the pre-built binary (recommended — no Rust toolchain needed):
 
 ```bash
 yay -S zorg-bin
 ```
 
-Or build from source:
-
-```bash
-yay -S zorg
-```
+### Other
 
 > [!TIP]
 > Get the compiled [release binary](https://github.com/Zwielichtig/zorg/releases)!
