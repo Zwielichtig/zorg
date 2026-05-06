@@ -1,6 +1,6 @@
 [package]
 name = "zorg"
-version = "1.5.0"
+version = "1.5.2"
 edition = "2021"
 
 [dependencies]
@@ -13,3 +13,4 @@ ratatui = "0.29"
 crossterm = "0.28"
 fuzzy-matcher = "0.3.7"
 unicode-width = "0.2.0"
+clap = { version = "4", features = ["derive"] }
